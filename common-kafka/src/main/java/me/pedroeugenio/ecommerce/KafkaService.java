@@ -17,12 +17,12 @@ public class KafkaService<T> implements Closeable {
     private KafkaConsumer<String, T> consumer;
     private ConsumerFunction parse;
 
-    public KafkaService(String name, String topic, ConsumerFunction parse, Class<T> classType, Map<String,String> properties) {
-        this(parse, name,classType, properties);
+    public KafkaService(String name, String topic, ConsumerFunction parse, Class<T> classType, Map<String, String> properties) {
+        this(parse, name, classType, properties);
         consumer.subscribe(Collections.singletonList(topic));
     }
 
-    KafkaService(String name, Pattern topic, ConsumerFunction parse, Class<T> classType, Map<String,String> properties) {
+    KafkaService(String name, Pattern topic, ConsumerFunction parse, Class<T> classType, Map<String, String> properties) {
         this(parse, name, classType, properties);
         consumer.subscribe(topic);
     }
@@ -35,7 +35,7 @@ public class KafkaService<T> implements Closeable {
 
 
     private Properties getProperties(Class<T> type, String name, Map<String, String> overrideProperties) {
-        System.out.println("type "+type.getName());
+        System.out.println("type " + type.getName());
         var properties = new Properties();
         properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
@@ -45,8 +45,8 @@ public class KafkaService<T> implements Closeable {
         properties.setProperty(GsonDeserializer.TYPE_CONFIG, type.getName());
         properties.putAll(overrideProperties);
 
-        for(Map.Entry<Object, Object> in : properties.entrySet()){
-            System.out.println("valor "+in.getKey()+" = "+in.getValue());
+        for (Map.Entry<Object, Object> in : properties.entrySet()) {
+            System.out.println("valor " + in.getKey() + " = " + in.getValue());
         }
         return properties;
     }
@@ -58,9 +58,15 @@ public class KafkaService<T> implements Closeable {
                 System.out.println("Encontrei " + records.count() + " registros!");
             } else continue;
             for (ConsumerRecord<String, T> record : records) {
-                parse.consume(record);
+                try {
+                    parse.consume(record);
+                } catch (Exception e) {
+                    // only catches Exception because no matter which Exception
+                    //i want to recover and parse the next one
+                    // so far, just logging the exception for this message
+                    e.printStackTrace();
+                }
             }
-            System.out.println("email processed");
         }
     }
 
